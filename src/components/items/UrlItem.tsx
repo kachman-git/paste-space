@@ -22,16 +22,16 @@ export function UrlItem({ item }: UrlItemProps) {
     const domain = getDomain(url);
 
     return (
-        <div className="group relative bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] hover:border-white/[0.12] rounded-2xl p-5 transition-all duration-300">
+        <div className="group relative theme-card rounded-2xl p-5 transition-all duration-300 hover:shadow-lg">
             {/* Header */}
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-                        <svg className="w-3.5 h-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <svg className="w-3.5 h-3.5 text-cyan-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                         </svg>
                     </div>
-                    <span className="text-xs text-gray-500 font-medium">LINK</span>
+                    <span className="text-xs theme-faint font-medium">LINK</span>
                 </div>
                 <CopyButton text={url} size="sm" />
             </div>
@@ -41,7 +41,7 @@ export function UrlItem({ item }: UrlItemProps) {
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block group/link"
+                className="block"
             >
                 <div className="flex items-center gap-2 mb-1.5">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -51,15 +51,15 @@ export function UrlItem({ item }: UrlItemProps) {
                         className="w-4 h-4 rounded"
                         loading="lazy"
                     />
-                    <span className="text-sm text-gray-400">{domain}</span>
+                    <span className="text-sm theme-muted">{domain}</span>
                 </div>
-                <p className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors break-all leading-relaxed">
+                <p className="text-sm text-cyan-500 hover:text-cyan-400 transition-colors break-all leading-relaxed">
                     {url}
                 </p>
             </a>
 
             {/* Timestamp */}
-            <div className="mt-3 text-xs text-gray-600">
+            <div className="mt-3 text-xs theme-faint">
                 {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
         </div>

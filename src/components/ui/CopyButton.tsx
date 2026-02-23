@@ -28,8 +28,8 @@ export function CopyButton({ text, className = '', size = 'md' }: CopyButtonProp
         <button
             onClick={handleCopy}
             className={`${padding} rounded-lg transition-all duration-200 ${copied
-                    ? 'bg-emerald-500/20 text-emerald-400'
-                    : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white'
+                    ? 'bg-emerald-500/20 text-emerald-500'
+                    : 'theme-card-hover theme-muted'
                 } ${className}`}
             title={copied ? 'Copied!' : 'Copy to clipboard'}
         >

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Space, Item, ItemType } from '@/lib/types';
+import { Space, ItemType } from '@/lib/types';
 import { useRealtimeItems } from '@/hooks/useRealtimeItems';
 import { usePresence } from '@/hooks/usePresence';
 import { uploadFile } from '@/lib/upload';
@@ -12,6 +12,7 @@ import { CodeItem } from '@/components/items/CodeItem';
 import { ImageItem } from '@/components/items/ImageItem';
 import { FileItem } from '@/components/items/FileItem';
 import { UrlItem } from '@/components/items/UrlItem';
+import { Item } from '@/lib/types';
 
 interface SpaceViewProps {
     space: Space;
@@ -32,11 +33,9 @@ function isLikelyCode(text: string): { isCode: boolean; language?: string } {
         /<\/?[a-z][a-z0-9]*[\s>]/i,
     ];
 
-    // Need 2+ lines and match indicators
     if (lines.length >= 2) {
         const score = codeIndicators.filter((r) => r.test(text)).length;
         if (score >= 2) {
-            // Try to detect language
             if (/\b(import|export|const|let|=>|async|await)\b/.test(text)) return { isCode: true, language: 'typescript' };
             if (/\bdef\b.*:/.test(text)) return { isCode: true, language: 'python' };
             if (/<\/?[a-z][a-z0-9]*[\s>]/i.test(text) && /className|class=/.test(text)) return { isCode: true, language: 'html' };
@@ -48,7 +47,6 @@ function isLikelyCode(text: string): { isCode: boolean; language?: string } {
     return { isCode: false };
 }
 
-// Detect content type
 function detectContentType(text: string): { type: ItemType; language?: string } {
     if (URL_REGEX.test(text.trim())) return { type: 'url' };
     const codeCheck = isLikelyCode(text);
@@ -56,7 +54,6 @@ function detectContentType(text: string): { type: ItemType; language?: string } 
     return { type: 'text' };
 }
 
-// Detect image type from file
 function getFileItemType(file: File): ItemType {
     if (file.type.startsWith('image/gif')) return 'gif';
     if (file.type.startsWith('image/')) return 'image';
@@ -64,9 +61,10 @@ function getFileItemType(file: File): ItemType {
 }
 
 export function SpaceView({ space }: SpaceViewProps) {
-    const { items, loading, addItemOptimistic } = useRealtimeItems(space.id);
+    const { items, loading } = useRealtimeItems(space.id);
     const presenceCount = usePresence(space.id);
     const [uploading, setUploading] = useState(false);
+    const [pasting, setPasting] = useState(false);
     const bottomRef = useRef<HTMLDivElement>(null);
 
     // Scroll to bottom when new items arrive
@@ -108,7 +106,6 @@ export function SpaceView({ space }: SpaceViewProps) {
     // Handle paste events
     useEffect(() => {
         const handlePaste = async (e: ClipboardEvent) => {
-            // Skip if pasting into an input/textarea
             const target = e.target as HTMLElement;
             if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
 
@@ -129,30 +126,17 @@ export function SpaceView({ space }: SpaceViewProps) {
             const text = clipboardData.getData('text/plain');
             if (text) {
                 e.preventDefault();
+                setPasting(true);
                 const { type, language } = detectContentType(text);
-
-                // Optimistic add
-                const tempItem: Item = {
-                    id: `temp-${Date.now()}`,
-                    space_id: space.id,
-                    type,
-                    content: text,
-                    storage_path: null,
-                    file_name: null,
-                    file_size: null,
-                    language: language || null,
-                    created_at: new Date().toISOString(),
-                };
-                addItemOptimistic(tempItem);
-
                 await createItem({ type, content: text, language });
+                setPasting(false);
             }
         };
 
         document.addEventListener('paste', handlePaste);
         return () => document.removeEventListener('paste', handlePaste);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [space.id, createItem, addItemOptimistic]);
+    }, [space.id, createItem]);
 
     // Handle file upload
     const handleFileUpload = async (file: File) => {
@@ -161,20 +145,6 @@ export function SpaceView({ space }: SpaceViewProps) {
             const result = await uploadFile(space.id, file);
             if (result) {
                 const type = getFileItemType(file);
-
-                const tempItem: Item = {
-                    id: `temp-${Date.now()}`,
-                    space_id: space.id,
-                    type,
-                    content: null,
-                    storage_path: result.path,
-                    file_name: file.name,
-                    file_size: file.size,
-                    language: null,
-                    created_at: new Date().toISOString(),
-                };
-                addItemOptimistic(tempItem);
-
                 await createItem({
                     type,
                     storage_path: result.path,
@@ -197,7 +167,7 @@ export function SpaceView({ space }: SpaceViewProps) {
             }
         },
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [space.id, createItem, addItemOptimistic]
+        [space.id, createItem]
     );
 
     // Render item by type
@@ -237,12 +207,14 @@ export function SpaceView({ space }: SpaceViewProps) {
             <Header space={space} presenceCount={presenceCount} />
 
             <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-                {/* Upload progress bar */}
-                {uploading && (
+                {/* Upload / Paste progress */}
+                {(uploading || pasting) && (
                     <div className="mb-6">
-                        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 flex items-center gap-3">
+                        <div className="theme-card rounded-2xl p-4 flex items-center gap-3">
                             <div className="w-5 h-5 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
-                            <span className="text-sm text-gray-400">Uploading file...</span>
+                            <span className="text-sm theme-muted">
+                                {uploading ? 'Uploading file...' : 'Sending paste...'}
+                            </span>
                         </div>
                     </div>
                 )}
@@ -265,21 +237,21 @@ export function SpaceView({ space }: SpaceViewProps) {
                                 />
                             </svg>
                         </div>
-                        <h2 className="text-xl font-semibold text-white mb-2">
+                        <h2 className="text-xl font-semibold theme-text mb-2">
                             Your space is ready
                         </h2>
-                        <p className="text-gray-400 text-sm max-w-md mb-2">
+                        <p className="theme-muted text-sm max-w-md mb-2">
                             Paste text, images, code, or URLs anywhere on this page.
                             <br />
                             Drag & drop files to upload them.
                         </p>
                         <div className="flex items-center gap-2 mt-4">
-                            <kbd className="px-2.5 py-1 rounded-lg bg-white/[0.05] border border-white/[0.1] text-xs text-gray-400 font-mono">
+                            <kbd className="px-2.5 py-1 rounded-lg theme-kbd text-xs font-mono">
                                 Ctrl+V
                             </kbd>
-                            <span className="text-xs text-gray-500">to paste</span>
-                            <span className="text-xs text-gray-600 mx-2">•</span>
-                            <span className="text-xs text-gray-500">drag files to upload</span>
+                            <span className="text-xs theme-muted">to paste</span>
+                            <span className="text-xs theme-muted mx-2">•</span>
+                            <span className="text-xs theme-muted">drag files to upload</span>
                         </div>
                     </div>
                 )}
@@ -296,12 +268,12 @@ export function SpaceView({ space }: SpaceViewProps) {
                     <>
                         {/* Toolbar */}
                         <div className="flex items-center justify-between mb-6">
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm theme-muted">
                                 {items.length} {items.length === 1 ? 'item' : 'items'}
                             </p>
                             <button
                                 onClick={handleCopyAllText}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.08] text-gray-400 hover:text-white text-xs font-medium transition-all border border-white/[0.06] hover:border-white/[0.1]"
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg theme-card-hover text-xs font-medium transition-all"
                             >
                                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                     <path
@@ -326,9 +298,9 @@ export function SpaceView({ space }: SpaceViewProps) {
 
             {/* Paste hint (fixed bottom) */}
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30">
-                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.05] backdrop-blur-xl border border-white/[0.08] shadow-2xl">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full theme-pill shadow-2xl">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs theme-muted">
                         Paste anywhere or drag files to share
                     </span>
                 </div>

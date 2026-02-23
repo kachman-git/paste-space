@@ -26,11 +26,6 @@ export function useRealtimeItems(spaceId: string | null) {
         setLoading(false);
     }, [spaceId]);
 
-    // Add item optimistically
-    const addItemOptimistic = useCallback((item: Item) => {
-        setItems((prev) => [...prev, item]);
-    }, []);
-
     useEffect(() => {
         if (!spaceId) return;
 
@@ -50,7 +45,7 @@ export function useRealtimeItems(spaceId: string | null) {
                 (payload) => {
                     const newItem = payload.new as Item;
                     setItems((prev) => {
-                        // Avoid duplicates (from optimistic updates)
+                        // Avoid duplicates
                         if (prev.some((item) => item.id === newItem.id)) {
                             return prev;
                         }
@@ -67,5 +62,5 @@ export function useRealtimeItems(spaceId: string | null) {
         };
     }, [spaceId, fetchItems]);
 
-    return { items, loading, connected, addItemOptimistic, setItems };
+    return { items, loading, connected, setItems };
 }

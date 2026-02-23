@@ -1,24 +1,138 @@
 @import "tailwindcss";
 
+/* ===== Theme Variables ===== */
 :root {
-  --background: #0a0a0f;
-  --foreground: #ededed;
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #111118;
+  --bg-card: rgba(255, 255, 255, 0.03);
+  --bg-card-hover: rgba(255, 255, 255, 0.06);
+  --border-card: rgba(255, 255, 255, 0.06);
+  --border-card-hover: rgba(255, 255, 255, 0.12);
+  --text-primary: #ffffff;
+  --text-secondary: #e5e5e5;
+  --text-muted: #9ca3af;
+  --text-faint: #6b7280;
+  --pill-bg: rgba(255, 255, 255, 0.05);
+  --pill-border: rgba(255, 255, 255, 0.08);
+  --kbd-bg: rgba(255, 255, 255, 0.05);
+  --kbd-border: rgba(255, 255, 255, 0.1);
+  --kbd-text: #9ca3af;
+}
+
+html.light {
+  --bg-primary: #f8f9fc;
+  --bg-secondary: #ffffff;
+  --bg-card: rgba(0, 0, 0, 0.02);
+  --bg-card-hover: rgba(0, 0, 0, 0.05);
+  --border-card: rgba(0, 0, 0, 0.08);
+  --border-card-hover: rgba(0, 0, 0, 0.15);
+  --text-primary: #111827;
+  --text-secondary: #1f2937;
+  --text-muted: #6b7280;
+  --text-faint: #9ca3af;
+  --pill-bg: rgba(0, 0, 0, 0.04);
+  --pill-border: rgba(0, 0, 0, 0.08);
+  --kbd-bg: rgba(0, 0, 0, 0.05);
+  --kbd-border: rgba(0, 0, 0, 0.1);
+  --kbd-text: #6b7280;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--bg-primary);
+  --color-foreground: var(--text-primary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Custom scrollbar */
+/* ===== Theme Utility Classes ===== */
+.theme-bg {
+  background: var(--bg-primary);
+}
+
+.theme-bg-secondary {
+  background: var(--bg-secondary);
+}
+
+.theme-text {
+  color: var(--text-primary);
+}
+
+.theme-text-secondary {
+  color: var(--text-secondary);
+}
+
+.theme-muted {
+  color: var(--text-muted);
+}
+
+.theme-faint {
+  color: var(--text-faint);
+}
+
+.theme-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.theme-card:hover,
+.theme-card-hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-card-hover);
+}
+
+.theme-card-hover {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+}
+
+.theme-card-hover:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-card-hover);
+}
+
+.theme-pill {
+  background: var(--pill-bg);
+  border: 1px solid var(--pill-border);
+  backdrop-filter: blur(16px);
+}
+
+.theme-kbd {
+  background: var(--kbd-bg);
+  border: 1px solid var(--kbd-border);
+  color: var(--kbd-text);
+}
+
+.theme-header {
+  background: color-mix(in srgb, var(--bg-primary) 80%, transparent);
+  border-bottom: 1px solid var(--border-card);
+  backdrop-filter: blur(16px);
+}
+
+.theme-input {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  color: var(--text-primary);
+}
+
+.theme-input:focus {
+  border-color: rgba(124, 58, 237, 0.5);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
+}
+
+.theme-input::placeholder {
+  color: var(--text-faint);
+}
+
+/* ===== Custom Scrollbar ===== */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -29,37 +143,46 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(128, 128, 128, 0.2);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(128, 128, 128, 0.35);
 }
 
-/* Animations */
+/* ===== Animations ===== */
 @keyframes gradient-shift {
-  0%, 100% {
+
+  0%,
+  100% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
 }
 
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-20px);
   }
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.4;
   }
+
   50% {
     opacity: 0.8;
   }
@@ -70,6 +193,7 @@ body {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -105,14 +229,14 @@ body {
   animation-delay: 600ms;
 }
 
-/* Highlight.js overrides for dark theme */
+/* Highlight.js overrides */
 .hljs {
   background: transparent !important;
   padding: 0 !important;
 }
 
-/* Selection styling */
+/* Selection */
 ::selection {
   background: rgba(124, 58, 237, 0.3);
-  color: white;
+  color: var(--text-primary);
 }

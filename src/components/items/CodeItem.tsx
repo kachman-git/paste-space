@@ -5,7 +5,6 @@ import { Item } from '@/lib/types';
 import { CopyButton } from '@/components/ui/CopyButton';
 import hljs from 'highlight.js/lib/core';
 
-// Import common languages
 import javascript from 'highlight.js/lib/languages/javascript';
 import typescript from 'highlight.js/lib/languages/typescript';
 import python from 'highlight.js/lib/languages/python';
@@ -68,16 +67,16 @@ export function CodeItem({ item }: CodeItemProps) {
     }, [item.content, item.language]);
 
     return (
-        <div className="group relative bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] hover:border-white/[0.12] rounded-2xl overflow-hidden transition-all duration-300">
+        <div className="group relative theme-card rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg">
             {/* Header bar */}
-            <div className="flex items-center justify-between px-4 py-2.5 bg-white/[0.02] border-b border-white/[0.06]">
+            <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: '1px solid var(--border-card)' }}>
                 <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                        <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                         </svg>
                     </div>
-                    <span className="text-xs text-gray-500 font-medium uppercase">
+                    <span className="text-xs theme-faint font-medium uppercase">
                         {item.language || 'CODE'}
                     </span>
                 </div>
@@ -87,14 +86,14 @@ export function CodeItem({ item }: CodeItemProps) {
             {/* Code block */}
             <div className="p-4 overflow-x-auto">
                 <pre className="text-sm leading-relaxed">
-                    <code ref={codeRef} className="text-gray-300 font-mono">
+                    <code ref={codeRef} className="theme-text-secondary font-mono">
                         {item.content}
                     </code>
                 </pre>
             </div>
 
             {/* Timestamp */}
-            <div className="px-4 pb-3 text-xs text-gray-600">
+            <div className="px-4 pb-3 text-xs theme-faint">
                 {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
         </div>
