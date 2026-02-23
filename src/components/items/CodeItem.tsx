@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Item } from '@/lib/types';
 import { CopyButton } from '@/components/ui/CopyButton';
+import { DeleteButton } from '@/components/ui/DeleteButton';
 import hljs from 'highlight.js/lib/core';
 
 import javascript from 'highlight.js/lib/languages/javascript';
@@ -48,27 +49,24 @@ hljs.registerLanguage('markdown', markdown);
 
 interface CodeItemProps {
     item: Item;
+    onDelete?: () => void;
 }
 
-export function CodeItem({ item }: CodeItemProps) {
+export function CodeItem({ item, onDelete }: CodeItemProps) {
     const codeRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
         if (codeRef.current && item.content) {
             if (item.language && hljs.getLanguage(item.language)) {
-                codeRef.current.innerHTML = hljs.highlight(item.content, {
-                    language: item.language,
-                }).value;
+                codeRef.current.innerHTML = hljs.highlight(item.content, { language: item.language }).value;
             } else {
-                const result = hljs.highlightAuto(item.content);
-                codeRef.current.innerHTML = result.value;
+                codeRef.current.innerHTML = hljs.highlightAuto(item.content).value;
             }
         }
     }, [item.content, item.language]);
 
     return (
         <div className="group relative theme-card rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg">
-            {/* Header bar */}
             <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: '1px solid var(--border-card)' }}>
                 <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center">
@@ -76,23 +74,18 @@ export function CodeItem({ item }: CodeItemProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                         </svg>
                     </div>
-                    <span className="text-xs theme-faint font-medium uppercase">
-                        {item.language || 'CODE'}
-                    </span>
+                    <span className="text-xs theme-faint font-medium uppercase">{item.language || 'CODE'}</span>
                 </div>
-                <CopyButton text={item.content || ''} size="sm" />
+                <div className="flex items-center gap-1">
+                    <CopyButton text={item.content || ''} size="sm" />
+                    {onDelete && <DeleteButton onDelete={onDelete} />}
+                </div>
             </div>
-
-            {/* Code block */}
             <div className="p-4 overflow-x-auto">
                 <pre className="text-sm leading-relaxed">
-                    <code ref={codeRef} className="theme-text-secondary font-mono">
-                        {item.content}
-                    </code>
+                    <code ref={codeRef} className="theme-text-secondary font-mono">{item.content}</code>
                 </pre>
             </div>
-
-            {/* Timestamp */}
             <div className="px-4 pb-3 text-xs theme-faint">
                 {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>

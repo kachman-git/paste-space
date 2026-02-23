@@ -82,3 +82,68 @@ export async function GET(request: NextRequest) {
         );
     }
 }
+
+export async function DELETE(request: NextRequest) {
+    try {
+        const supabase = getServerSupabase();
+        const { searchParams } = new URL(request.url);
+        const itemId = searchParams.get('id');
+        const spaceId = searchParams.get('space_id');
+
+        if (itemId) {
+            // Delete single item + its storage file
+            const { data: item } = await supabase
+                .from('items')
+                .select('storage_path')
+                .eq('id', itemId)
+                .single();
+
+            if (item?.storage_path) {
+                await supabase.storage.from('space-files').remove([item.storage_path]);
+            }
+
+            const { error } = await supabase
+                .from('items')
+                .delete()
+                .eq('id', itemId);
+
+            if (error) {
+                console.error('Delete item error:', error);
+                return NextResponse.json({ error: 'Failed to delete item' }, { status: 500 });
+            }
+
+            return NextResponse.json({ success: true });
+        } else if (spaceId) {
+            // Delete all items in a space + their storage files
+            const { data: items } = await supabase
+                .from('items')
+                .select('storage_path')
+                .eq('space_id', spaceId)
+                .not('storage_path', 'is', null);
+
+            if (items && items.length > 0) {
+                const paths = items.map((i) => i.storage_path).filter(Boolean) as string[];
+                if (paths.length > 0) {
+                    await supabase.storage.from('space-files').remove(paths);
+                }
+            }
+
+            const { error } = await supabase
+                .from('items')
+                .delete()
+                .eq('space_id', spaceId);
+
+            if (error) {
+                console.error('Delete all items error:', error);
+                return NextResponse.json({ error: 'Failed to delete items' }, { status: 500 });
+            }
+
+            return NextResponse.json({ success: true });
+        } else {
+            return NextResponse.json({ error: 'id or space_id is required' }, { status: 400 });
+        }
+    } catch (err) {
+        console.error('Delete error:', err);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+}

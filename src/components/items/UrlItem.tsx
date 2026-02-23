@@ -3,9 +3,11 @@
 import React from 'react';
 import { Item } from '@/lib/types';
 import { CopyButton } from '@/components/ui/CopyButton';
+import { DeleteButton } from '@/components/ui/DeleteButton';
 
 interface UrlItemProps {
     item: Item;
+    onDelete?: () => void;
 }
 
 function getDomain(url: string): string {
@@ -17,13 +19,12 @@ function getDomain(url: string): string {
     }
 }
 
-export function UrlItem({ item }: UrlItemProps) {
+export function UrlItem({ item, onDelete }: UrlItemProps) {
     const url = item.content || '';
     const domain = getDomain(url);
 
     return (
         <div className="group relative theme-card rounded-2xl p-5 transition-all duration-300 hover:shadow-lg">
-            {/* Header */}
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-lg bg-cyan-500/10 flex items-center justify-center">
@@ -33,32 +34,19 @@ export function UrlItem({ item }: UrlItemProps) {
                     </div>
                     <span className="text-xs theme-faint font-medium">LINK</span>
                 </div>
-                <CopyButton text={url} size="sm" />
+                <div className="flex items-center gap-1">
+                    <CopyButton text={url} size="sm" />
+                    {onDelete && <DeleteButton onDelete={onDelete} />}
+                </div>
             </div>
-
-            {/* URL Content */}
-            <a
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block"
-            >
+            <a href={url} target="_blank" rel="noopener noreferrer" className="block">
                 <div className="flex items-center gap-2 mb-1.5">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                        src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`}
-                        alt=""
-                        className="w-4 h-4 rounded"
-                        loading="lazy"
-                    />
+                    <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`} alt="" className="w-4 h-4 rounded" loading="lazy" />
                     <span className="text-sm theme-muted">{domain}</span>
                 </div>
-                <p className="text-sm text-cyan-500 hover:text-cyan-400 transition-colors break-all leading-relaxed">
-                    {url}
-                </p>
+                <p className="text-sm text-cyan-500 hover:text-cyan-400 transition-colors break-all leading-relaxed">{url}</p>
             </a>
-
-            {/* Timestamp */}
             <div className="mt-3 text-xs theme-faint">
                 {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>

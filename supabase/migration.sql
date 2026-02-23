@@ -74,7 +74,8 @@ CREATE POLICY "items_insert_all" ON items
 CREATE POLICY "items_delete_all" ON items
   FOR DELETE USING (true);
 
--- 6. Enable Realtime on items table
+-- 6. Enable Realtime on items table (with full replica identity for DELETE events)
+ALTER TABLE items REPLICA IDENTITY FULL;
 ALTER PUBLICATION supabase_realtime ADD TABLE items;
 
 -- 7. Storage Buckets (run these separately if needed)

@@ -26,12 +26,22 @@ export function useRealtimeItems(spaceId: string | null) {
         setLoading(false);
     }, [spaceId]);
 
+    // Remove item from local state
+    const removeItem = useCallback((itemId: string) => {
+        setItems((prev) => prev.filter((item) => item.id !== itemId));
+    }, []);
+
+    // Clear all items from local state
+    const clearItems = useCallback(() => {
+        setItems([]);
+    }, []);
+
     useEffect(() => {
         if (!spaceId) return;
 
         fetchItems();
 
-        // Subscribe to realtime inserts
+        // Subscribe to realtime changes
         const channel = supabase
             .channel(`space-${spaceId}`)
             .on(
@@ -45,12 +55,26 @@ export function useRealtimeItems(spaceId: string | null) {
                 (payload) => {
                     const newItem = payload.new as Item;
                     setItems((prev) => {
-                        // Avoid duplicates
                         if (prev.some((item) => item.id === newItem.id)) {
                             return prev;
                         }
                         return [...prev, newItem];
                     });
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'DELETE',
+                    schema: 'public',
+                    table: 'items',
+                    filter: `space_id=eq.${spaceId}`,
+                },
+                (payload) => {
+                    const deletedId = (payload.old as { id: string }).id;
+                    if (deletedId) {
+                        setItems((prev) => prev.filter((item) => item.id !== deletedId));
+                    }
                 }
             )
             .subscribe((status) => {
@@ -62,5 +86,5 @@ export function useRealtimeItems(spaceId: string | null) {
         };
     }, [spaceId, fetchItems]);
 
-    return { items, loading, connected, setItems };
+    return { items, loading, connected, setItems, removeItem, clearItems };
 }

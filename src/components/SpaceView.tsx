@@ -18,10 +18,8 @@ interface SpaceViewProps {
     space: Space;
 }
 
-// URL detection
 const URL_REGEX = /^(https?:\/\/[^\s]+)$/i;
 
-// Code detection heuristics
 function isLikelyCode(text: string): { isCode: boolean; language?: string } {
     const lines = text.split('\n');
     const codeIndicators = [
@@ -32,7 +30,6 @@ function isLikelyCode(text: string): { isCode: boolean; language?: string } {
         /^\s*(\/\/|#|\/\*|\*|--)/m,
         /<\/?[a-z][a-z0-9]*[\s>]/i,
     ];
-
     if (lines.length >= 2) {
         const score = codeIndicators.filter((r) => r.test(text)).length;
         if (score >= 2) {
@@ -61,20 +58,20 @@ function getFileItemType(file: File): ItemType {
 }
 
 export function SpaceView({ space }: SpaceViewProps) {
-    const { items, loading } = useRealtimeItems(space.id);
+    const { items, loading, removeItem, clearItems } = useRealtimeItems(space.id);
     const presenceCount = usePresence(space.id);
     const [uploading, setUploading] = useState(false);
     const [pasting, setPasting] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const bottomRef = useRef<HTMLDivElement>(null);
 
-    // Scroll to bottom when new items arrive
     useEffect(() => {
         if (items.length > 0) {
             bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
         }
     }, [items.length]);
 
-    // Create item via API
     const createItem = useCallback(
         async (itemData: {
             type: ItemType;
@@ -88,10 +85,7 @@ export function SpaceView({ space }: SpaceViewProps) {
                 const res = await fetch('/api/items', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        space_id: space.id,
-                        ...itemData,
-                    }),
+                    body: JSON.stringify({ space_id: space.id, ...itemData }),
                 });
                 const data = await res.json();
                 return data.item;
@@ -103,26 +97,48 @@ export function SpaceView({ space }: SpaceViewProps) {
         [space.id]
     );
 
-    // Handle paste events
+    // Delete single item
+    const handleDeleteItem = useCallback(
+        async (itemId: string) => {
+            removeItem(itemId);
+            try {
+                await fetch(`/api/items?id=${itemId}`, { method: 'DELETE' });
+            } catch (err) {
+                console.error('Delete item error:', err);
+            }
+        },
+        [removeItem]
+    );
+
+    // Delete all items
+    const handleDeleteAll = useCallback(async () => {
+        setDeleting(true);
+        clearItems();
+        try {
+            await fetch(`/api/items?space_id=${space.id}`, { method: 'DELETE' });
+        } catch (err) {
+            console.error('Delete all error:', err);
+        } finally {
+            setDeleting(false);
+            setShowDeleteConfirm(false);
+        }
+    }, [space.id, clearItems]);
+
+    // Paste handler
     useEffect(() => {
         const handlePaste = async (e: ClipboardEvent) => {
             const target = e.target as HTMLElement;
             if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
-
             const clipboardData = e.clipboardData;
             if (!clipboardData) return;
 
-            // Check for files (images, etc.)
             const files = Array.from(clipboardData.files);
             if (files.length > 0) {
                 e.preventDefault();
-                for (const file of files) {
-                    await handleFileUpload(file);
-                }
+                for (const file of files) await handleFileUpload(file);
                 return;
             }
 
-            // Check for text
             const text = clipboardData.getData('text/plain');
             if (text) {
                 e.preventDefault();
@@ -132,25 +148,18 @@ export function SpaceView({ space }: SpaceViewProps) {
                 setPasting(false);
             }
         };
-
         document.addEventListener('paste', handlePaste);
         return () => document.removeEventListener('paste', handlePaste);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [space.id, createItem]);
 
-    // Handle file upload
     const handleFileUpload = async (file: File) => {
         setUploading(true);
         try {
             const result = await uploadFile(space.id, file);
             if (result) {
                 const type = getFileItemType(file);
-                await createItem({
-                    type,
-                    storage_path: result.path,
-                    file_name: file.name,
-                    file_size: file.size,
-                });
+                await createItem({ type, storage_path: result.path, file_name: file.name, file_size: file.size });
             }
         } catch (err) {
             console.error('Upload error:', err);
@@ -159,47 +168,40 @@ export function SpaceView({ space }: SpaceViewProps) {
         }
     };
 
-    // Handle file drop
     const handleFileDrop = useCallback(
         async (files: File[]) => {
-            for (const file of files) {
-                await handleFileUpload(file);
-            }
+            for (const file of files) await handleFileUpload(file);
         },
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [space.id, createItem]
     );
 
-    // Render item by type
     const renderItem = (item: Item) => {
+        const onDelete = () => handleDeleteItem(item.id);
         switch (item.type) {
             case 'text':
-                return <TextItem key={item.id} item={item} />;
+                return <TextItem key={item.id} item={item} onDelete={onDelete} />;
             case 'code':
-                return <CodeItem key={item.id} item={item} />;
+                return <CodeItem key={item.id} item={item} onDelete={onDelete} />;
             case 'image':
             case 'gif':
-                return <ImageItem key={item.id} item={item} />;
+                return <ImageItem key={item.id} item={item} onDelete={onDelete} />;
             case 'file':
-                return <FileItem key={item.id} item={item} />;
+                return <FileItem key={item.id} item={item} onDelete={onDelete} />;
             case 'url':
-                return <UrlItem key={item.id} item={item} />;
+                return <UrlItem key={item.id} item={item} onDelete={onDelete} />;
             default:
-                return <TextItem key={item.id} item={item} />;
+                return <TextItem key={item.id} item={item} onDelete={onDelete} />;
         }
     };
 
-    // Copy all text
     const handleCopyAllText = async () => {
         const textItems = items
             .filter((item) => item.type === 'text' || item.type === 'code' || item.type === 'url')
             .map((item) => item.content)
             .filter(Boolean)
             .join('\n\n---\n\n');
-
-        if (textItems) {
-            await navigator.clipboard.writeText(textItems);
-        }
+        if (textItems) await navigator.clipboard.writeText(textItems);
     };
 
     return (
@@ -207,7 +209,6 @@ export function SpaceView({ space }: SpaceViewProps) {
             <Header space={space} presenceCount={presenceCount} />
 
             <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-                {/* Upload / Paste progress */}
                 {(uploading || pasting) && (
                     <div className="mb-6">
                         <div className="theme-card rounded-2xl p-4 flex items-center gap-3">
@@ -219,36 +220,19 @@ export function SpaceView({ space }: SpaceViewProps) {
                     </div>
                 )}
 
-                {/* Empty state */}
                 {!loading && items.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-24 text-center">
                         <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-500/10 to-indigo-500/10 flex items-center justify-center mb-6">
-                            <svg
-                                className="w-10 h-10 text-violet-400/60"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={1}
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-                                />
+                            <svg className="w-10 h-10 text-violet-400/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                             </svg>
                         </div>
-                        <h2 className="text-xl font-semibold theme-text mb-2">
-                            Your space is ready
-                        </h2>
+                        <h2 className="text-xl font-semibold theme-text mb-2">Your space is ready</h2>
                         <p className="theme-muted text-sm max-w-md mb-2">
-                            Paste text, images, code, or URLs anywhere on this page.
-                            <br />
-                            Drag & drop files to upload them.
+                            Paste text, images, code, or URLs anywhere on this page.<br />Drag & drop files to upload them.
                         </p>
                         <div className="flex items-center gap-2 mt-4">
-                            <kbd className="px-2.5 py-1 rounded-lg theme-kbd text-xs font-mono">
-                                Ctrl+V
-                            </kbd>
+                            <kbd className="px-2.5 py-1 rounded-lg theme-kbd text-xs font-mono">Ctrl+V</kbd>
                             <span className="text-xs theme-muted">to paste</span>
                             <span className="text-xs theme-muted mx-2">•</span>
                             <span className="text-xs theme-muted">drag files to upload</span>
@@ -256,14 +240,12 @@ export function SpaceView({ space }: SpaceViewProps) {
                     </div>
                 )}
 
-                {/* Loading state */}
                 {loading && (
                     <div className="flex items-center justify-center py-24">
                         <div className="w-8 h-8 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
                     </div>
                 )}
 
-                {/* Items grid */}
                 {items.length > 0 && (
                     <>
                         {/* Toolbar */}
@@ -271,22 +253,53 @@ export function SpaceView({ space }: SpaceViewProps) {
                             <p className="text-sm theme-muted">
                                 {items.length} {items.length === 1 ? 'item' : 'items'}
                             </p>
-                            <button
-                                onClick={handleCopyAllText}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg theme-card-hover text-xs font-medium transition-all"
-                            >
-                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                                    />
-                                </svg>
-                                Copy All Text
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleCopyAllText}
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg theme-card-hover text-xs font-medium transition-all"
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                    Copy All
+                                </button>
+
+                                {/* Delete All button */}
+                                {!showDeleteConfirm ? (
+                                    <button
+                                        onClick={() => setShowDeleteConfirm(true)}
+                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20"
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        Delete All
+                                    </button>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs text-red-400">Sure?</span>
+                                        <button
+                                            onClick={handleDeleteAll}
+                                            disabled={deleting}
+                                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all"
+                                        >
+                                            {deleting ? (
+                                                <div className="w-3 h-3 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                                            ) : (
+                                                'Yes, delete all'
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => setShowDeleteConfirm(false)}
+                                            className="px-3 py-1.5 rounded-lg text-xs font-medium theme-card-hover transition-all"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
-                        {/* Items grid */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {items.map(renderItem)}
                         </div>
@@ -296,13 +309,10 @@ export function SpaceView({ space }: SpaceViewProps) {
                 <div ref={bottomRef} />
             </main>
 
-            {/* Paste hint (fixed bottom) */}
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30">
                 <div className="flex items-center gap-2 px-4 py-2 rounded-full theme-pill shadow-2xl">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-xs theme-muted">
-                        Paste anywhere or drag files to share
-                    </span>
+                    <span className="text-xs theme-muted">Paste anywhere or drag files to share</span>
                 </div>
             </div>
         </DropZone>
