@@ -68,12 +68,17 @@ export function useRealtimeItems(spaceId: string | null) {
                     event: 'DELETE',
                     schema: 'public',
                     table: 'items',
-                    filter: `space_id=eq.${spaceId}`,
                 },
                 (payload) => {
-                    const deletedId = (payload.old as { id: string }).id;
+                    // payload.old contains at minimum the primary key (id)
+                    const oldRecord = payload.old as Record<string, unknown>;
+                    const deletedId = oldRecord?.id as string | undefined;
+
                     if (deletedId) {
                         setItems((prev) => prev.filter((item) => item.id !== deletedId));
+                    } else {
+                        // Fallback: re-fetch all items if we can't identify which was deleted
+                        fetchItems();
                     }
                 }
             )
