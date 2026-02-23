@@ -54,7 +54,7 @@ export function ImageItem({ item }: ImageItemProps) {
                         <img
                             src={imageUrl}
                             alt={item.file_name || 'Pasted image'}
-                            className="w-full h-auto max-h-80 object-contain"
+                            className="w-full h-auto max-h-48 object-contain"
                             loading="lazy"
                         />
                     )}
