@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Roboto } from "next/font/google";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import "./globals.css";
 
-const inter = Inter({
+const roboto = Roboto({
   variable: "--font-geist-sans",
   subsets: ["latin"],
   display: "swap",
@@ -14,6 +14,9 @@ export const metadata: Metadata = {
   description:
     "Share text, files, images, code, and links instantly. Create a space, paste anything, and share with anyone in real-time.",
   keywords: ["clipboard", "paste", "share", "real-time", "collaboration"],
+  icons: {
+    icon: "/icon.svg",
+  },
   openGraph: {
     title: "PasteSpace — Universal Copy & Paste Platform",
     description: "Share anything instantly. Create a space, paste, and share.",
@@ -28,7 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={`${inter.variable} antialiased`}>
+      <body className={`${roboto.variable} antialiased`}>
         <ThemeProvider>
           {children}
         </ThemeProvider>
