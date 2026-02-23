@@ -64,6 +64,8 @@ export function SpaceView({ space }: SpaceViewProps) {
     const [pasting, setPasting] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [mobileText, setMobileText] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -221,23 +223,39 @@ export function SpaceView({ space }: SpaceViewProps) {
                 )}
 
                 {!loading && items.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-24 text-center">
-                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-500/10 to-indigo-500/10 flex items-center justify-center mb-6">
-                            <svg className="w-10 h-10 text-violet-400/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                            </svg>
+                    <>
+                        {/* Desktop empty state */}
+                        <div className="hidden md:flex flex-col items-center justify-center py-24 text-center">
+                            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-500/10 to-indigo-500/10 flex items-center justify-center mb-6">
+                                <svg className="w-10 h-10 text-violet-400/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                </svg>
+                            </div>
+                            <h2 className="text-xl font-semibold theme-text mb-2">Your space is ready</h2>
+                            <p className="theme-muted text-sm max-w-md mb-2">
+                                Paste text, images, code, or URLs anywhere on this page.<br />Drag & drop files to upload them.
+                            </p>
+                            <div className="flex items-center gap-2 mt-4">
+                                <kbd className="px-2.5 py-1 rounded-lg theme-kbd text-xs font-mono">Ctrl+V</kbd>
+                                <span className="text-xs theme-muted">to paste</span>
+                                <span className="text-xs theme-muted mx-2">•</span>
+                                <span className="text-xs theme-muted">drag files to upload</span>
+                            </div>
                         </div>
-                        <h2 className="text-xl font-semibold theme-text mb-2">Your space is ready</h2>
-                        <p className="theme-muted text-sm max-w-md mb-2">
-                            Paste text, images, code, or URLs anywhere on this page.<br />Drag & drop files to upload them.
-                        </p>
-                        <div className="flex items-center gap-2 mt-4">
-                            <kbd className="px-2.5 py-1 rounded-lg theme-kbd text-xs font-mono">Ctrl+V</kbd>
-                            <span className="text-xs theme-muted">to paste</span>
-                            <span className="text-xs theme-muted mx-2">•</span>
-                            <span className="text-xs theme-muted">drag files to upload</span>
+
+                        {/* Mobile empty state — text input + file upload */}
+                        <div className="md:hidden flex flex-col items-center justify-center py-12 text-center">
+                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500/10 to-indigo-500/10 flex items-center justify-center mb-4">
+                                <svg className="w-8 h-8 text-violet-400/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                </svg>
+                            </div>
+                            <h2 className="text-lg font-semibold theme-text mb-1">Your space is ready</h2>
+                            <p className="theme-muted text-sm mb-6">Type or paste something to share</p>
+
+
                         </div>
-                    </div>
+                    </>
                 )}
 
                 {loading && (
@@ -306,13 +324,74 @@ export function SpaceView({ space }: SpaceViewProps) {
                     </>
                 )}
 
-                <div ref={bottomRef} />
+                <div ref={bottomRef} className="pb-20 md:pb-0" />
+
+                {/* Hidden file input for mobile */}
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    multiple
+                    onChange={async (e) => {
+                        const files = Array.from(e.target.files || []);
+                        for (const file of files) await handleFileUpload(file);
+                        e.target.value = '';
+                    }}
+                />
             </main>
 
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30">
+            {/* Desktop: passive hint pill */}
+            <div className="hidden md:block fixed bottom-6 left-1/2 -translate-x-1/2 z-30">
                 <div className="flex items-center gap-2 px-4 py-2 rounded-full theme-pill shadow-2xl">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     <span className="text-xs theme-muted">Paste anywhere or drag files to share</span>
+                </div>
+            </div>
+
+            {/* Mobile: fixed bottom input bar */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 theme-header px-3 py-3 safe-area-bottom">
+                <div className="flex items-end gap-2">
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-2.5 rounded-xl theme-card-hover transition-all flex-shrink-0"
+                        title="Upload file"
+                    >
+                        <svg className="w-5 h-5 theme-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </button>
+                    <textarea
+                        value={mobileText}
+                        onChange={(e) => setMobileText(e.target.value)}
+                        placeholder="Type or paste here..."
+                        className="flex-1 px-4 py-2.5 rounded-xl theme-input text-sm resize-none max-h-32 transition-all"
+                        rows={1}
+                        onInput={(e) => {
+                            const el = e.target as HTMLTextAreaElement;
+                            el.style.height = 'auto';
+                            el.style.height = Math.min(el.scrollHeight, 128) + 'px';
+                        }}
+                    />
+                    <button
+                        onClick={async () => {
+                            if (!mobileText.trim()) return;
+                            setPasting(true);
+                            const { type, language } = detectContentType(mobileText);
+                            await createItem({ type, content: mobileText, language });
+                            setMobileText('');
+                            setPasting(false);
+                        }}
+                        disabled={!mobileText.trim() || pasting}
+                        className="p-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white transition-all disabled:opacity-40 flex-shrink-0"
+                    >
+                        {pasting ? (
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            </svg>
+                        )}
+                    </button>
                 </div>
             </div>
         </DropZone>

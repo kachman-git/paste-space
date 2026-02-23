@@ -11,7 +11,7 @@ export function DeleteButton({ onDelete, className = '' }: DeleteButtonProps) {
     return (
         <button
             onClick={onDelete}
-            className={`p-1.5 rounded-lg transition-all duration-200 text-gray-400 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 ${className}`}
+            className={`p-1.5 rounded-lg transition-all duration-200 text-gray-400 hover:text-red-400 hover:bg-red-500/10 md:opacity-0 md:group-hover:opacity-100 ${className}`}
             title="Delete item"
         >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
