@@ -3,13 +3,11 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Item } from '@/lib/types';
-import { useSound } from '@/hooks/useSound';
 
 export function useRealtimeItems(spaceId: string | null) {
     const [items, setItems] = useState<Item[]>([]);
     const [loading, setLoading] = useState(true);
     const [connected, setConnected] = useState(false);
-    const { play: playSound } = useSound();
     const initialLoadDone = useRef(false);
 
     // Fetch initial items
@@ -22,7 +20,7 @@ export function useRealtimeItems(spaceId: string | null) {
             .select('*')
             .eq('space_id', spaceId)
             .order('is_pinned', { ascending: false })
-            .order('created_at', { ascending: true });
+            .order('created_at', { ascending: false });
 
         if (!error && data) {
             setItems(data as Item[]);
@@ -63,11 +61,7 @@ export function useRealtimeItems(spaceId: string | null) {
                         if (prev.some((item) => item.id === newItem.id)) {
                             return prev;
                         }
-                        // Play sound for new items from others (after initial load)
-                        if (initialLoadDone.current) {
-                            playSound();
-                        }
-                        return [...prev, newItem];
+                        return [newItem, ...prev];
                     });
                 }
             )

@@ -14,16 +14,23 @@ export function PinButton({ itemId, isPinned, onToggle }: PinButtonProps) {
 
     const handleToggle = async () => {
         const newVal = !pinned;
-        setPinned(newVal);
+        setPinned(newVal); // optimistic
         setLoading(true);
 
         try {
-            await fetch('/api/items', {
+            const res = await fetch('/api/items', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: itemId, is_pinned: newVal }),
             });
-            onToggle?.(newVal);
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                console.error('Pin failed:', data.error || res.statusText);
+                setPinned(!newVal); // revert on failure
+            } else {
+                onToggle?.(newVal);
+            }
         } catch (err) {
             console.error('Pin toggle error:', err);
             setPinned(!newVal); // revert
@@ -37,8 +44,8 @@ export function PinButton({ itemId, isPinned, onToggle }: PinButtonProps) {
             onClick={handleToggle}
             disabled={loading}
             className={`p-1.5 rounded-lg transition-all duration-200 ${pinned
-                    ? 'text-amber-400 bg-amber-500/10'
-                    : 'theme-faint hover:theme-muted theme-card-hover'
+                ? 'text-amber-400 bg-amber-500/10'
+                : 'theme-faint hover:theme-muted theme-card-hover'
                 }`}
             title={pinned ? 'Unpin item' : 'Pin to top'}
         >
