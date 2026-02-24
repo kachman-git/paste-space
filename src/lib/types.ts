@@ -19,6 +19,8 @@ export interface Item {
     file_name: string | null;
     file_size: number | null;
     language: string | null;
+    position: number;
+    is_pinned: boolean;
     created_at: string;
 }
 

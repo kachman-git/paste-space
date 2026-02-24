@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSupabase } from '@/lib/supabase-server';
+import { rateLimit } from '@/lib/rate-limit';
 import bcrypt from 'bcryptjs';
 import { nanoid } from 'nanoid';
 
@@ -23,6 +24,12 @@ function getExpiresAt(expiresIn?: string): string | null {
 
 export async function POST(request: NextRequest) {
     try {
+        const ip = request.headers.get('x-forwarded-for') || 'anonymous';
+        const limit = rateLimit(`spaces-post:${ip}`, 10, 60_000);
+        if (!limit.success) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+        }
+
         const supabase = getServerSupabase();
         const body = await request.json();
         const { name, is_secret, passphrase, expires_in } = body;

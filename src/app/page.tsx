@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { useTheme } from '@/components/ThemeProvider';
+import { TEMPLATES, SpaceTemplate } from '@/lib/templates';
 
 export default function HomePage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function HomePage() {
   const [isSecret, setIsSecret] = useState(false);
   const [passphrase, setPassphrase] = useState('');
   const [expiresIn, setExpiresIn] = useState<string>('24h');
+  const [selectedTemplate, setSelectedTemplate] = useState<SpaceTemplate | null>(null);
 
   const handleCreateSpace = async () => {
     setCreating(true);
@@ -32,6 +34,16 @@ export default function HomePage() {
 
       const data = await res.json();
       if (data.slug) {
+        // Create starter items from template
+        if (selectedTemplate) {
+          for (const item of selectedTemplate.starterItems) {
+            await fetch('/api/items', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ space_id: data.space.id, ...item }),
+            });
+          }
+        }
         const url = `${window.location.origin}/${data.slug}`;
         try {
           await navigator.clipboard.writeText(url);
@@ -203,8 +215,8 @@ export default function HomePage() {
                           key={opt.value}
                           onClick={() => setExpiresIn(opt.value)}
                           className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${expiresIn === opt.value
-                              ? 'bg-violet-500/20 text-violet-500 border border-violet-500/30'
-                              : 'theme-card-hover'
+                            ? 'bg-violet-500/20 text-violet-500 border border-violet-500/30'
+                            : 'theme-card-hover'
                             }`}
                         >
                           {opt.label}
@@ -242,6 +254,31 @@ export default function HomePage() {
                       />
                     </div>
                   )}
+
+                  {/* Template picker */}
+                  <div>
+                    <label className="block text-xs theme-faint mb-2 font-medium">Start with a template</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {TEMPLATES.map((tmpl) => (
+                        <button
+                          key={tmpl.id}
+                          onClick={() => setSelectedTemplate(selectedTemplate?.id === tmpl.id ? null : tmpl)}
+                          className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-left text-xs font-medium transition-all ${selectedTemplate?.id === tmpl.id
+                              ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
+                              : 'theme-card-hover'
+                            }`}
+                        >
+                          <span className="text-base">{tmpl.icon}</span>
+                          <div className="min-w-0">
+                            <div className="truncate">{tmpl.name}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    {selectedTemplate && (
+                      <p className="text-xs theme-faint mt-2">{selectedTemplate.description}</p>
+                    )}
+                  </div>
                 </div>
               )}
 

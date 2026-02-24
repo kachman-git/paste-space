@@ -1,16 +1,40 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Item } from '@/lib/types';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { DeleteButton } from '@/components/ui/DeleteButton';
+import { PinButton } from '@/components/ui/PinButton';
+import { EmojiReactions } from '@/components/ui/EmojiReactions';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface TextItemProps {
     item: Item;
     onDelete?: () => void;
 }
 
+function isMarkdown(text: string): boolean {
+    const mdPatterns = [
+        /^#{1,6}\s/m,           // headings
+        /\*\*.+\*\*/,            // bold
+        /\*.+\*/,                // italic
+        /^\s*[-*+]\s/m,          // lists
+        /^\s*\d+\.\s/m,          // ordered lists
+        /\[.+\]\(.+\)/,          // links
+        /```/,                    // code fences
+        /^\|.+\|$/m,             // tables
+        /^>\s/m,                  // blockquotes
+        /^---$/m,                 // horizontal rule
+    ];
+    return mdPatterns.filter((p) => p.test(text)).length >= 1;
+}
+
 export function TextItem({ item, onDelete }: TextItemProps) {
+    const text = item.content || '';
+    const hasMd = isMarkdown(text);
+    const [showRaw, setShowRaw] = useState(false);
+
     return (
         <div className="group relative theme-card rounded-2xl p-5 transition-all duration-300 hover:shadow-lg">
             <div className="flex items-center justify-between mb-3">
@@ -21,14 +45,36 @@ export function TextItem({ item, onDelete }: TextItemProps) {
                         </svg>
                     </div>
                     <span className="text-xs theme-faint font-medium">TEXT</span>
+                    {hasMd && (
+                        <button
+                            onClick={() => setShowRaw(!showRaw)}
+                            className="text-xs theme-faint hover:theme-muted px-1.5 py-0.5 rounded theme-card-hover transition-all"
+                        >
+                            {showRaw ? 'Preview' : 'Raw'}
+                        </button>
+                    )}
                 </div>
                 <div className="flex items-center gap-1">
-                    <CopyButton text={item.content || ''} size="sm" />
+                    <PinButton itemId={item.id} isPinned={item.is_pinned} />
+                    <CopyButton text={text} size="sm" />
                     {onDelete && <DeleteButton onDelete={onDelete} />}
                 </div>
             </div>
-            <p className="theme-text-secondary text-sm leading-relaxed whitespace-pre-wrap break-words">{item.content}</p>
-            <div className="mt-3 text-xs theme-faint">
+
+            {/* Content */}
+            {hasMd && !showRaw ? (
+                <div className="prose prose-sm prose-invert max-w-none theme-text-secondary leading-relaxed markdown-content">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+                </div>
+            ) : (
+                <p className="theme-text-secondary text-sm leading-relaxed whitespace-pre-wrap break-words">{text}</p>
+            )}
+
+            {/* Reactions */}
+            <EmojiReactions itemId={item.id} spaceId={item.space_id} />
+
+            {/* Timestamp */}
+            <div className="mt-2 text-xs theme-faint">
                 {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
         </div>

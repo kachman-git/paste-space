@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSupabase } from '@/lib/supabase-server';
+import { rateLimit } from '@/lib/rate-limit';
+import { checkContent } from '@/lib/moderation';
 
 export async function POST(request: NextRequest) {
     try {
+        // Rate limit
+        const ip = request.headers.get('x-forwarded-for') || 'anonymous';
+        const limit = rateLimit(`items-post:${ip}`, 30, 60_000);
+        if (!limit.success) {
+            return NextResponse.json(
+                { error: 'Too many requests. Please slow down.' },
+                { status: 429 }
+            );
+        }
+
         const supabase = getServerSupabase();
         const body = await request.json();
         const { space_id, type, content, storage_path, file_name, file_size, language } = body;
@@ -12,6 +24,17 @@ export async function POST(request: NextRequest) {
                 { error: 'space_id and type are required' },
                 { status: 400 }
             );
+        }
+
+        // Content moderation for text items
+        if (content && (type === 'text' || type === 'code')) {
+            const mod = checkContent(content);
+            if (!mod.clean) {
+                return NextResponse.json(
+                    { error: 'Content flagged by moderation', flagged: mod.flagged },
+                    { status: 422 }
+                );
+            }
         }
 
         const { data, error } = await supabase
@@ -63,6 +86,7 @@ export async function GET(request: NextRequest) {
             .from('items')
             .select('*')
             .eq('space_id', spaceId)
+            .order('is_pinned', { ascending: false })
             .order('created_at', { ascending: true });
 
         if (error) {
@@ -80,6 +104,43 @@ export async function GET(request: NextRequest) {
             { error: 'Internal server error' },
             { status: 500 }
         );
+    }
+}
+
+export async function PATCH(request: NextRequest) {
+    try {
+        const supabase = getServerSupabase();
+        const body = await request.json();
+        const { id, is_pinned, position } = body;
+
+        if (!id) {
+            return NextResponse.json({ error: 'id is required' }, { status: 400 });
+        }
+
+        const updates: Record<string, unknown> = {};
+        if (typeof is_pinned === 'boolean') updates.is_pinned = is_pinned;
+        if (typeof position === 'number') updates.position = position;
+
+        if (Object.keys(updates).length === 0) {
+            return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
+        }
+
+        const { data, error } = await supabase
+            .from('items')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Update item error:', error);
+            return NextResponse.json({ error: 'Failed to update item' }, { status: 500 });
+        }
+
+        return NextResponse.json({ item: data });
+    } catch (err) {
+        console.error('Update item error:', err);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
 

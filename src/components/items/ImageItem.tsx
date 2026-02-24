@@ -4,6 +4,8 @@ import React from 'react';
 import { Item } from '@/lib/types';
 import { getFileUrl } from '@/lib/upload';
 import { DeleteButton } from '@/components/ui/DeleteButton';
+import { PinButton } from '@/components/ui/PinButton';
+import { EmojiReactions } from '@/components/ui/EmojiReactions';
 
 interface ImageItemProps {
     item: Item;
@@ -37,11 +39,8 @@ export function ImageItem({ item, onDelete }: ImageItemProps) {
                     <span className="text-xs theme-faint font-medium">{isGif ? 'GIF' : 'IMAGE'}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                    <button
-                        onClick={handleDownload}
-                        className="p-1.5 rounded-lg theme-card-hover transition-all opacity-0 group-hover:opacity-100"
-                        title="Download"
-                    >
+                    <PinButton itemId={item.id} isPinned={item.is_pinned} />
+                    <button onClick={handleDownload} className="p-1.5 rounded-lg theme-card-hover transition-all opacity-0 group-hover:opacity-100" title="Download">
                         <svg className="w-3.5 h-3.5 theme-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
@@ -57,9 +56,12 @@ export function ImageItem({ item, onDelete }: ImageItemProps) {
                     )}
                 </div>
             </div>
-            <div className="px-4 pb-3 flex items-center justify-between">
-                <span className="text-xs theme-faint truncate max-w-[200px]">{item.file_name || 'Image'}</span>
-                <span className="text-xs theme-faint">{new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            <div className="px-4 pb-3">
+                <EmojiReactions itemId={item.id} spaceId={item.space_id} />
+                <div className="flex items-center justify-between mt-2">
+                    <span className="text-xs theme-faint truncate max-w-[200px]">{item.file_name || 'Image'}</span>
+                    <span className="text-xs theme-faint">{new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
             </div>
         </div>
     );

@@ -4,6 +4,8 @@ import React from 'react';
 import { Item } from '@/lib/types';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { DeleteButton } from '@/components/ui/DeleteButton';
+import { PinButton } from '@/components/ui/PinButton';
+import { EmojiReactions } from '@/components/ui/EmojiReactions';
 
 interface UrlItemProps {
     item: Item;
@@ -11,12 +13,7 @@ interface UrlItemProps {
 }
 
 function getDomain(url: string): string {
-    try {
-        const u = new URL(url);
-        return u.hostname;
-    } catch {
-        return url;
-    }
+    try { return new URL(url).hostname; } catch { return url; }
 }
 
 export function UrlItem({ item, onDelete }: UrlItemProps) {
@@ -35,6 +32,7 @@ export function UrlItem({ item, onDelete }: UrlItemProps) {
                     <span className="text-xs theme-faint font-medium">LINK</span>
                 </div>
                 <div className="flex items-center gap-1">
+                    <PinButton itemId={item.id} isPinned={item.is_pinned} />
                     <CopyButton text={url} size="sm" />
                     {onDelete && <DeleteButton onDelete={onDelete} />}
                 </div>
@@ -47,7 +45,8 @@ export function UrlItem({ item, onDelete }: UrlItemProps) {
                 </div>
                 <p className="text-sm text-cyan-500 hover:text-cyan-400 transition-colors break-all leading-relaxed">{url}</p>
             </a>
-            <div className="mt-3 text-xs theme-faint">
+            <EmojiReactions itemId={item.id} spaceId={item.space_id} />
+            <div className="mt-2 text-xs theme-faint">
                 {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
         </div>

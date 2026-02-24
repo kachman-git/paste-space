@@ -95,3 +95,29 @@ CREATE POLICY "space_files_insert" ON storage.objects
 
 CREATE POLICY "space_files_delete" ON storage.objects
   FOR DELETE USING (bucket_id = 'space-files');
+
+-- 8. Reactions table
+CREATE TABLE reactions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  item_id UUID NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+  space_id UUID NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+  emoji TEXT NOT NULL,
+  count INTEGER DEFAULT 1,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_reactions_item_id ON reactions (item_id);
+
+ALTER TABLE reactions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "reactions_select_all" ON reactions FOR SELECT USING (true);
+CREATE POLICY "reactions_insert_all" ON reactions FOR INSERT WITH CHECK (true);
+CREATE POLICY "reactions_update_all" ON reactions FOR UPDATE USING (true);
+CREATE POLICY "reactions_delete_all" ON reactions FOR DELETE USING (true);
+
+-- 9. Add view_count to spaces
+ALTER TABLE spaces ADD COLUMN IF NOT EXISTS view_count INTEGER DEFAULT 0;
+
+-- 10. Add position and is_pinned to items
+ALTER TABLE items ADD COLUMN IF NOT EXISTS position INTEGER DEFAULT 0;
+ALTER TABLE items ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT FALSE;

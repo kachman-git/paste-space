@@ -4,6 +4,8 @@ import React from 'react';
 import { Item } from '@/lib/types';
 import { getFileUrl } from '@/lib/upload';
 import { DeleteButton } from '@/components/ui/DeleteButton';
+import { PinButton } from '@/components/ui/PinButton';
+import { EmojiReactions } from '@/components/ui/EmojiReactions';
 
 interface FileItemProps {
     item: Item;
@@ -14,8 +16,7 @@ function formatFileSize(bytes: number | null): string {
     if (!bytes) return 'Unknown size';
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function getFileIcon(fileName: string | null): { color: string; bg: string } {
@@ -57,11 +58,8 @@ export function FileItem({ item, onDelete }: FileItemProps) {
                     <p className="text-xs theme-faint mt-1">{formatFileSize(item.file_size)}</p>
                 </div>
                 <div className="flex items-center gap-1">
-                    <button
-                        onClick={handleDownload}
-                        className="p-2 rounded-xl theme-card-hover transition-all duration-200 opacity-0 group-hover:opacity-100"
-                        title="Download file"
-                    >
+                    <PinButton itemId={item.id} isPinned={item.is_pinned} />
+                    <button onClick={handleDownload} className="p-2 rounded-xl theme-card-hover transition-all duration-200 opacity-0 group-hover:opacity-100" title="Download">
                         <svg className="w-4 h-4 theme-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
@@ -69,7 +67,8 @@ export function FileItem({ item, onDelete }: FileItemProps) {
                     {onDelete && <DeleteButton onDelete={onDelete} />}
                 </div>
             </div>
-            <div className="mt-3 text-xs theme-faint">
+            <EmojiReactions itemId={item.id} spaceId={item.space_id} />
+            <div className="mt-2 text-xs theme-faint">
                 {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
         </div>

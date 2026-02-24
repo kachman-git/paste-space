@@ -12,6 +12,7 @@ import { CodeItem } from '@/components/items/CodeItem';
 import { ImageItem } from '@/components/items/ImageItem';
 import { FileItem } from '@/components/items/FileItem';
 import { UrlItem } from '@/components/items/UrlItem';
+import { GiphyPicker } from '@/components/GiphyPicker';
 import { Item } from '@/lib/types';
 
 interface SpaceViewProps {
@@ -65,6 +66,7 @@ export function SpaceView({ space }: SpaceViewProps) {
     const [deleting, setDeleting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [mobileText, setMobileText] = useState('');
+    const [showGifPicker, setShowGifPicker] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -208,7 +210,7 @@ export function SpaceView({ space }: SpaceViewProps) {
 
     return (
         <DropZone onFileDrop={handleFileDrop}>
-            <Header space={space} presenceCount={presenceCount} />
+            <Header space={space} presenceCount={presenceCount} items={items} />
 
             <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
                 {(uploading || pasting) && (
@@ -360,6 +362,13 @@ export function SpaceView({ space }: SpaceViewProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                         </svg>
                     </button>
+                    <button
+                        onClick={() => setShowGifPicker(true)}
+                        className="p-2.5 rounded-xl theme-card-hover transition-all flex-shrink-0"
+                        title="Search GIFs"
+                    >
+                        <span className="text-sm font-bold theme-muted">GIF</span>
+                    </button>
                     <textarea
                         value={mobileText}
                         onChange={(e) => setMobileText(e.target.value)}
@@ -394,6 +403,15 @@ export function SpaceView({ space }: SpaceViewProps) {
                     </button>
                 </div>
             </div>
+
+            {/* GIF Picker Modal */}
+            <GiphyPicker
+                isOpen={showGifPicker}
+                onClose={() => setShowGifPicker(false)}
+                onSelect={async (gifUrl) => {
+                    await createItem({ type: 'gif', content: gifUrl });
+                }}
+            />
         </DropZone>
     );
 }

@@ -4,8 +4,9 @@ import React, { useEffect, useRef } from 'react';
 import { Item } from '@/lib/types';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { DeleteButton } from '@/components/ui/DeleteButton';
+import { PinButton } from '@/components/ui/PinButton';
+import { EmojiReactions } from '@/components/ui/EmojiReactions';
 import hljs from 'highlight.js/lib/core';
-
 import javascript from 'highlight.js/lib/languages/javascript';
 import typescript from 'highlight.js/lib/languages/typescript';
 import python from 'highlight.js/lib/languages/python';
@@ -15,16 +16,9 @@ import json from 'highlight.js/lib/languages/json';
 import bash from 'highlight.js/lib/languages/bash';
 import sql from 'highlight.js/lib/languages/sql';
 import java from 'highlight.js/lib/languages/java';
-import csharp from 'highlight.js/lib/languages/csharp';
-import cpp from 'highlight.js/lib/languages/cpp';
 import go from 'highlight.js/lib/languages/go';
 import rust from 'highlight.js/lib/languages/rust';
 import php from 'highlight.js/lib/languages/php';
-import ruby from 'highlight.js/lib/languages/ruby';
-import swift from 'highlight.js/lib/languages/swift';
-import kotlin from 'highlight.js/lib/languages/kotlin';
-import yaml from 'highlight.js/lib/languages/yaml';
-import markdown from 'highlight.js/lib/languages/markdown';
 
 hljs.registerLanguage('javascript', javascript);
 hljs.registerLanguage('typescript', typescript);
@@ -36,16 +30,9 @@ hljs.registerLanguage('json', json);
 hljs.registerLanguage('bash', bash);
 hljs.registerLanguage('sql', sql);
 hljs.registerLanguage('java', java);
-hljs.registerLanguage('csharp', csharp);
-hljs.registerLanguage('cpp', cpp);
 hljs.registerLanguage('go', go);
 hljs.registerLanguage('rust', rust);
 hljs.registerLanguage('php', php);
-hljs.registerLanguage('ruby', ruby);
-hljs.registerLanguage('swift', swift);
-hljs.registerLanguage('kotlin', kotlin);
-hljs.registerLanguage('yaml', yaml);
-hljs.registerLanguage('markdown', markdown);
 
 interface CodeItemProps {
     item: Item;
@@ -77,6 +64,7 @@ export function CodeItem({ item, onDelete }: CodeItemProps) {
                     <span className="text-xs theme-faint font-medium uppercase">{item.language || 'CODE'}</span>
                 </div>
                 <div className="flex items-center gap-1">
+                    <PinButton itemId={item.id} isPinned={item.is_pinned} />
                     <CopyButton text={item.content || ''} size="sm" />
                     {onDelete && <DeleteButton onDelete={onDelete} />}
                 </div>
@@ -86,8 +74,11 @@ export function CodeItem({ item, onDelete }: CodeItemProps) {
                     <code ref={codeRef} className="theme-text-secondary font-mono">{item.content}</code>
                 </pre>
             </div>
-            <div className="px-4 pb-3 text-xs theme-faint">
-                {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            <div className="px-4 pb-3">
+                <EmojiReactions itemId={item.id} spaceId={item.space_id} />
+                <div className="mt-2 text-xs theme-faint">
+                    {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
             </div>
         </div>
     );
