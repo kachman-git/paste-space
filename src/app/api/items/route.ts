@@ -129,15 +129,18 @@ export async function PATCH(request: NextRequest) {
             .from('items')
             .update(updates)
             .eq('id', id)
-            .select()
-            .single();
+            .select();
 
         if (error) {
             console.error('Update item error:', error);
-            return NextResponse.json({ error: 'Failed to update item' }, { status: 500 });
+            return NextResponse.json({ error: 'Failed to update item. Make sure the is_pinned and position columns exist in the items table.' }, { status: 500 });
         }
 
-        return NextResponse.json({ item: data });
+        if (!data || data.length === 0) {
+            return NextResponse.json({ error: 'Item not found or no changes applied' }, { status: 404 });
+        }
+
+        return NextResponse.json({ item: data[0] });
     } catch (err) {
         console.error('Update item error:', err);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

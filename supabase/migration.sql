@@ -74,6 +74,14 @@ CREATE POLICY "items_insert_all" ON items
 CREATE POLICY "items_delete_all" ON items
   FOR DELETE USING (true);
 
+-- Items: anyone can update items (pin/reorder)
+CREATE POLICY "items_update_all" ON items
+  FOR UPDATE USING (true);
+
+-- Spaces: anyone can update spaces (view count)
+CREATE POLICY "spaces_update_all" ON spaces
+  FOR UPDATE USING (true);
+
 -- 6. Enable Realtime on items table (with full replica identity for DELETE events)
 ALTER TABLE items REPLICA IDENTITY FULL;
 ALTER PUBLICATION supabase_realtime ADD TABLE items;
