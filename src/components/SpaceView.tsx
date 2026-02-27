@@ -59,7 +59,7 @@ function getFileItemType(file: File): ItemType {
 }
 
 export function SpaceView({ space }: SpaceViewProps) {
-    const { items, loading, removeItem, clearItems } = useRealtimeItems(space.id);
+    const { items, loading, removeItem, updateItem, clearItems } = useRealtimeItems(space.id);
     const presenceCount = usePresence(space.id);
     const [uploading, setUploading] = useState(false);
     const [pasting, setPasting] = useState(false);
@@ -182,20 +182,21 @@ export function SpaceView({ space }: SpaceViewProps) {
 
     const renderItem = (item: Item) => {
         const onDelete = () => handleDeleteItem(item.id);
+        const onPin = (pinned: boolean) => updateItem(item.id, { is_pinned: pinned });
         switch (item.type) {
             case 'text':
-                return <TextItem key={item.id} item={item} onDelete={onDelete} />;
+                return <TextItem key={item.id} item={item} onDelete={onDelete} onPin={onPin} />;
             case 'code':
-                return <CodeItem key={item.id} item={item} onDelete={onDelete} />;
+                return <CodeItem key={item.id} item={item} onDelete={onDelete} onPin={onPin} />;
             case 'image':
             case 'gif':
-                return <ImageItem key={item.id} item={item} onDelete={onDelete} />;
+                return <ImageItem key={item.id} item={item} onDelete={onDelete} onPin={onPin} />;
             case 'file':
-                return <FileItem key={item.id} item={item} onDelete={onDelete} />;
+                return <FileItem key={item.id} item={item} onDelete={onDelete} onPin={onPin} />;
             case 'url':
-                return <UrlItem key={item.id} item={item} onDelete={onDelete} />;
+                return <UrlItem key={item.id} item={item} onDelete={onDelete} onPin={onPin} />;
             default:
-                return <TextItem key={item.id} item={item} onDelete={onDelete} />;
+                return <TextItem key={item.id} item={item} onDelete={onDelete} onPin={onPin} />;
         }
     };
 

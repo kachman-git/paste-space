@@ -10,6 +10,7 @@ import { EmojiReactions } from '@/components/ui/EmojiReactions';
 interface FileItemProps {
     item: Item;
     onDelete?: () => void;
+    onPin?: (pinned: boolean) => void;
 }
 
 function formatFileSize(bytes: number | null): string {
@@ -30,7 +31,7 @@ function getFileIcon(fileName: string | null): { color: string; bg: string } {
     }
 }
 
-export function FileItem({ item, onDelete }: FileItemProps) {
+export function FileItem({ item, onDelete, onPin }: FileItemProps) {
     const fileUrl = item.storage_path ? getFileUrl(item.storage_path) : '';
     const { color, bg } = getFileIcon(item.file_name);
 
@@ -58,7 +59,7 @@ export function FileItem({ item, onDelete }: FileItemProps) {
                     <p className="text-xs theme-faint mt-1">{formatFileSize(item.file_size)}</p>
                 </div>
                 <div className="flex items-center gap-1">
-                    <PinButton itemId={item.id} isPinned={item.is_pinned} />
+                    <PinButton itemId={item.id} isPinned={item.is_pinned} onToggle={onPin} />
                     <button onClick={handleDownload} className="p-2 rounded-xl theme-card-hover transition-all duration-200 opacity-0 group-hover:opacity-100" title="Download">
                         <svg className="w-4 h-4 theme-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />

@@ -12,6 +12,7 @@ import remarkGfm from 'remark-gfm';
 interface TextItemProps {
     item: Item;
     onDelete?: () => void;
+    onPin?: (pinned: boolean) => void;
 }
 
 function isMarkdown(text: string): boolean {
@@ -30,10 +31,15 @@ function isMarkdown(text: string): boolean {
     return mdPatterns.filter((p) => p.test(text)).length >= 1;
 }
 
-export function TextItem({ item, onDelete }: TextItemProps) {
+export function TextItem({ item, onDelete, onPin }: TextItemProps) {
     const text = item.content || '';
     const hasMd = isMarkdown(text);
     const [showRaw, setShowRaw] = useState(false);
+
+    const CHAR_LIMIT = 300;
+    const isLong = text.length > CHAR_LIMIT;
+    const [expanded, setExpanded] = useState(false);
+    const displayText = isLong && !expanded ? text.slice(0, CHAR_LIMIT) + '…' : text;
 
     return (
         <div className="group relative theme-card rounded-2xl p-5 transition-all duration-300 hover:shadow-lg">
@@ -55,7 +61,7 @@ export function TextItem({ item, onDelete }: TextItemProps) {
                     )}
                 </div>
                 <div className="flex items-center gap-1">
-                    <PinButton itemId={item.id} isPinned={item.is_pinned} />
+                    <PinButton itemId={item.id} isPinned={item.is_pinned} onToggle={onPin} />
                     <CopyButton text={text} size="sm" />
                     {onDelete && <DeleteButton onDelete={onDelete} />}
                 </div>
@@ -64,10 +70,20 @@ export function TextItem({ item, onDelete }: TextItemProps) {
             {/* Content */}
             {hasMd && !showRaw ? (
                 <div className="prose prose-sm prose-invert max-w-none theme-text-secondary leading-relaxed markdown-content">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayText}</ReactMarkdown>
                 </div>
             ) : (
-                <p className="theme-text-secondary text-sm leading-relaxed whitespace-pre-wrap break-words">{text}</p>
+                <p className="theme-text-secondary text-sm leading-relaxed whitespace-pre-wrap break-words">{displayText}</p>
+            )}
+
+            {/* Show more / less toggle */}
+            {isLong && (
+                <button
+                    onClick={() => setExpanded(!expanded)}
+                    className="mt-2 text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                    {expanded ? 'Show less' : 'Show more'}
+                </button>
             )}
 
             {/* Reactions */}

@@ -10,9 +10,10 @@ import { EmojiReactions } from '@/components/ui/EmojiReactions';
 interface ImageItemProps {
     item: Item;
     onDelete?: () => void;
+    onPin?: (pinned: boolean) => void;
 }
 
-export function ImageItem({ item, onDelete }: ImageItemProps) {
+export function ImageItem({ item, onDelete, onPin }: ImageItemProps) {
     const imageUrl = item.storage_path ? getFileUrl(item.storage_path) : '';
     const isGif = item.type === 'gif';
 
@@ -39,7 +40,7 @@ export function ImageItem({ item, onDelete }: ImageItemProps) {
                     <span className="text-xs theme-faint font-medium">{isGif ? 'GIF' : 'IMAGE'}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                    <PinButton itemId={item.id} isPinned={item.is_pinned} />
+                    <PinButton itemId={item.id} isPinned={item.is_pinned} onToggle={onPin} />
                     <button onClick={handleDownload} className="p-1.5 rounded-lg theme-card-hover transition-all opacity-0 group-hover:opacity-100" title="Download">
                         <svg className="w-3.5 h-3.5 theme-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />

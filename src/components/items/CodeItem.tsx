@@ -37,9 +37,10 @@ hljs.registerLanguage('php', php);
 interface CodeItemProps {
     item: Item;
     onDelete?: () => void;
+    onPin?: (pinned: boolean) => void;
 }
 
-export function CodeItem({ item, onDelete }: CodeItemProps) {
+export function CodeItem({ item, onDelete, onPin }: CodeItemProps) {
     const codeRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
@@ -64,7 +65,7 @@ export function CodeItem({ item, onDelete }: CodeItemProps) {
                     <span className="text-xs theme-faint font-medium uppercase">{item.language || 'CODE'}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                    <PinButton itemId={item.id} isPinned={item.is_pinned} />
+                    <PinButton itemId={item.id} isPinned={item.is_pinned} onToggle={onPin} />
                     <CopyButton text={item.content || ''} size="sm" />
                     {onDelete && <DeleteButton onDelete={onDelete} />}
                 </div>

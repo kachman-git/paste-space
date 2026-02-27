@@ -4,6 +4,15 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Item } from '@/lib/types';
 
+// Sort: pinned first, then newest first
+function sortItems(items: Item[]): Item[] {
+    return [...items].sort((a, b) => {
+        if (a.is_pinned && !b.is_pinned) return -1;
+        if (!a.is_pinned && b.is_pinned) return 1;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+}
+
 export function useRealtimeItems(spaceId: string | null) {
     const [items, setItems] = useState<Item[]>([]);
     const [loading, setLoading] = useState(true);
@@ -34,6 +43,16 @@ export function useRealtimeItems(spaceId: string | null) {
         setItems((prev) => prev.filter((item) => item.id !== itemId));
     }, []);
 
+    // Update a single item locally and re-sort (used by PinButton)
+    const updateItem = useCallback((itemId: string, updates: Partial<Item>) => {
+        setItems((prev) => {
+            const updated = prev.map((item) =>
+                item.id === itemId ? { ...item, ...updates } : item
+            );
+            return sortItems(updated);
+        });
+    }, []);
+
     // Clear all items from local state
     const clearItems = useCallback(() => {
         setItems([]);
@@ -61,7 +80,25 @@ export function useRealtimeItems(spaceId: string | null) {
                         if (prev.some((item) => item.id === newItem.id)) {
                             return prev;
                         }
-                        return [newItem, ...prev];
+                        return sortItems([newItem, ...prev]);
+                    });
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'items',
+                    filter: `space_id=eq.${spaceId}`,
+                },
+                (payload) => {
+                    const updatedItem = payload.new as Item;
+                    setItems((prev) => {
+                        const updated = prev.map((item) =>
+                            item.id === updatedItem.id ? updatedItem : item
+                        );
+                        return sortItems(updated);
                     });
                 }
             )
@@ -73,14 +110,12 @@ export function useRealtimeItems(spaceId: string | null) {
                     table: 'items',
                 },
                 (payload) => {
-                    // payload.old contains at minimum the primary key (id)
                     const oldRecord = payload.old as Record<string, unknown>;
                     const deletedId = oldRecord?.id as string | undefined;
 
                     if (deletedId) {
                         setItems((prev) => prev.filter((item) => item.id !== deletedId));
                     } else {
-                        // Fallback: re-fetch all items if we can't identify which was deleted
                         fetchItems();
                     }
                 }
@@ -94,5 +129,5 @@ export function useRealtimeItems(spaceId: string | null) {
         };
     }, [spaceId, fetchItems]);
 
-    return { items, loading, connected, setItems, removeItem, clearItems };
+    return { items, loading, connected, setItems, removeItem, updateItem, clearItems };
 }

@@ -10,13 +10,14 @@ import { EmojiReactions } from '@/components/ui/EmojiReactions';
 interface UrlItemProps {
     item: Item;
     onDelete?: () => void;
+    onPin?: (pinned: boolean) => void;
 }
 
 function getDomain(url: string): string {
     try { return new URL(url).hostname; } catch { return url; }
 }
 
-export function UrlItem({ item, onDelete }: UrlItemProps) {
+export function UrlItem({ item, onDelete, onPin }: UrlItemProps) {
     const url = item.content || '';
     const domain = getDomain(url);
 
@@ -32,7 +33,7 @@ export function UrlItem({ item, onDelete }: UrlItemProps) {
                     <span className="text-xs theme-faint font-medium">LINK</span>
                 </div>
                 <div className="flex items-center gap-1">
-                    <PinButton itemId={item.id} isPinned={item.is_pinned} />
+                    <PinButton itemId={item.id} isPinned={item.is_pinned} onToggle={onPin} />
                     <CopyButton text={url} size="sm" />
                     {onDelete && <DeleteButton onDelete={onDelete} />}
                 </div>
