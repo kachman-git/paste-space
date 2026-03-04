@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSupabase } from '@/lib/supabase-server';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(
     request: NextRequest,
@@ -8,6 +9,19 @@ export async function POST(
     try {
         const supabase = getServerSupabase();
         const { slug } = await params;
+
+        // Rate limit: 1 view per IP per space per 5 minutes
+        const ip = request.headers.get('x-forwarded-for') || 'anonymous';
+        const limit = rateLimit(`analytics:${ip}:${slug}`, 1, 300_000);
+        if (!limit.success) {
+            // Return current count without incrementing
+            const { data } = await supabase
+                .from('spaces')
+                .select('view_count')
+                .eq('slug', slug)
+                .single();
+            return NextResponse.json({ view_count: data?.view_count || 0 });
+        }
 
         // Increment view_count
         const { data: space, error: fetchError } = await supabase

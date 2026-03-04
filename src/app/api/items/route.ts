@@ -26,6 +26,31 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Validate type against allowed values
+        const allowedTypes = ['text', 'image', 'file', 'gif', 'url', 'code'];
+        if (!allowedTypes.includes(type)) {
+            return NextResponse.json(
+                { error: `Invalid type. Allowed: ${allowedTypes.join(', ')}` },
+                { status: 400 }
+            );
+        }
+
+        // Limit text content to 100KB
+        if (content && typeof content === 'string' && content.length > 102_400) {
+            return NextResponse.json(
+                { error: 'Content too large. Maximum 100KB for text content.' },
+                { status: 413 }
+            );
+        }
+
+        // Validate file_size if provided (max 50MB)
+        if (file_size && (typeof file_size !== 'number' || file_size > 50 * 1024 * 1024)) {
+            return NextResponse.json(
+                { error: 'File size exceeds maximum of 50MB' },
+                { status: 413 }
+            );
+        }
+
         // Content moderation for text items
         if (content && (type === 'text' || type === 'code')) {
             const mod = checkContent(content);

@@ -2,13 +2,16 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { useTheme } from '@/components/ThemeProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { TEMPLATES, SpaceTemplate } from '@/lib/templates';
 
 export default function HomePage() {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
+  const { user, loading: authLoading, session } = useAuth();
   const [joinSlug, setJoinSlug] = useState('');
   const [creating, setCreating] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -21,9 +24,14 @@ export default function HomePage() {
   const handleCreateSpace = async () => {
     setCreating(true);
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      // Attach auth token so the space gets linked to the user's account
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
       const res = await fetch('/api/spaces', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           name: spaceName || undefined,
           is_secret: isSecret,
@@ -106,22 +114,49 @@ export default function HomePage() {
             <span className="text-lg font-bold theme-text tracking-tight">PasteSpace</span>
           </div>
 
-          {/* Theme toggle */}
-          <button
-            onClick={toggleTheme}
-            className="p-2.5 rounded-xl theme-card-hover transition-all duration-200"
-            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-          >
-            {theme === 'dark' ? (
-              <svg className="w-5 h-5 theme-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5 theme-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-              </svg>
+          <div className="flex items-center gap-2">
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2.5 rounded-xl theme-card-hover transition-all duration-200"
+              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            >
+              {theme === 'dark' ? (
+                <svg className="w-5 h-5 theme-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5 theme-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              )}
+            </button>
+
+            {/* Auth links */}
+            {!authLoading && (
+              user ? (
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-violet-500/10 text-violet-500 hover:bg-violet-500/20 transition-all"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                  <span className="hidden sm:inline">Dashboard</span>
+                </Link>
+              ) : (
+                <Link
+                  href="/auth/login"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium theme-card-hover transition-all"
+                >
+                  <svg className="w-4 h-4 theme-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span className="hidden sm:inline">Sign In</span>
+                </Link>
+              )
             )}
-          </button>
+          </div>
         </header>
 
         {/* Hero */}
@@ -264,8 +299,8 @@ export default function HomePage() {
                           key={tmpl.id}
                           onClick={() => setSelectedTemplate(selectedTemplate?.id === tmpl.id ? null : tmpl)}
                           className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-left text-xs font-medium transition-all ${selectedTemplate?.id === tmpl.id
-                              ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
-                              : 'theme-card-hover'
+                            ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
+                            : 'theme-card-hover'
                             }`}
                         >
                           <span className="text-base">{tmpl.icon}</span>

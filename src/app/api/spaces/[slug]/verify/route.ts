@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSupabase } from '@/lib/supabase-server';
+import { rateLimit } from '@/lib/rate-limit';
 import bcrypt from 'bcryptjs';
 
 export async function POST(
@@ -7,6 +8,16 @@ export async function POST(
     { params }: { params: Promise<{ slug: string }> }
 ) {
     try {
+        // Rate limit: 5 attempts per minute per IP to prevent brute-force
+        const ip = request.headers.get('x-forwarded-for') || 'anonymous';
+        const limit = rateLimit(`verify:${ip}`, 5, 60_000);
+        if (!limit.success) {
+            return NextResponse.json(
+                { error: 'Too many attempts. Please try again later.' },
+                { status: 429 }
+            );
+        }
+
         const supabase = getServerSupabase();
         const { slug } = await params;
         const body = await request.json();

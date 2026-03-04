@@ -6,6 +6,7 @@ export interface Space {
     name: string | null;
     is_secret: boolean;
     password_hash: string | null;
+    owner_id: string | null;
     expires_at: string | null;
     created_at: string;
 }
