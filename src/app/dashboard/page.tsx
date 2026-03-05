@@ -94,6 +94,28 @@ export default function DashboardPage() {
         router.push('/');
     };
 
+    const handleDeleteSpace = async (spaceId: string, e: React.MouseEvent) => {
+        e.preventDefault(); // Prevent the Link from navigating
+        e.stopPropagation();
+        if (!confirm('Are you sure you want to delete this space? This cannot be undone.')) return;
+
+        try {
+            // Delete all items in the space first
+            await supabase.from('items').delete().eq('space_id', spaceId);
+            // Delete the space
+            const { error: delError } = await supabase.from('spaces').delete().eq('id', spaceId);
+            if (delError) {
+                setError('Failed to delete space');
+                return;
+            }
+            setSpaces(prev => prev.filter(s => s.id !== spaceId));
+        } catch {
+            setError('Failed to delete space');
+        }
+    };
+
+    const isEmailConfirmed = user?.email_confirmed_at != null;
+
     if (authLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
@@ -152,6 +174,19 @@ export default function DashboardPage() {
             </header>
 
             <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-8">
+                {/* Email verification banner */}
+                {user && !isEmailConfirmed && (
+                    <div className="mb-6 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-3">
+                        <svg className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        <div>
+                            <p className="text-sm font-medium text-amber-400">Verify your email</p>
+                            <p className="text-xs text-amber-400/70 mt-0.5">Check your inbox for a confirmation link from PasteSpace to verify your account.</p>
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex items-center justify-between mb-8">
                     <div>
                         <h1 className="text-2xl font-bold theme-text">Your Spaces</h1>
@@ -227,6 +262,15 @@ export default function DashboardPage() {
                                                     Expired
                                                 </span>
                                             )}
+                                            <button
+                                                onClick={(e) => handleDeleteSpace(space.id, e)}
+                                                className="p-1 rounded-md text-red-400/0 group-hover:text-red-400/60 hover:!text-red-400 hover:bg-red-500/10 transition-all"
+                                                title="Delete space"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4 text-xs theme-faint">
