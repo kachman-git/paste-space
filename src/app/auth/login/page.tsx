@@ -1,27 +1,13 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/components/ThemeProvider';
 
 export default function LoginPage() {
-    return (
-        <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
-                <div className="w-8 h-8 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
-            </div>
-        }>
-            <LoginForm />
-        </Suspense>
-    );
-}
-
-function LoginForm() {
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const redirectTo = searchParams.get('redirect') || '/dashboard';
     const { signIn } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const [email, setEmail] = useState('');
@@ -36,11 +22,10 @@ function LoginForm() {
         setLoading(true);
         try {
             await signIn(email, password);
-            router.push(redirectTo);
+            router.push('/dashboard');
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Login failed';
             setError(message);
-        } finally {
             setLoading(false);
         }
     };

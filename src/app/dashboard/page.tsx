@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/components/ThemeProvider';
+import { supabase } from '@/lib/supabase';
 
 interface SpaceRow {
     id: string;
@@ -36,7 +37,7 @@ function timeAgo(dateStr: string): string {
 
 export default function DashboardPage() {
     const router = useRouter();
-    const { user, loading: authLoading, session, signOut } = useAuth();
+    const { user, loading: authLoading, signOut } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const [spaces, setSpaces] = useState<SpaceRow[]>([]);
     const [loading, setLoading] = useState(true);
@@ -44,30 +45,40 @@ export default function DashboardPage() {
 
     useEffect(() => {
         if (authLoading) return;
-        if (!user || !session) {
+        if (!user) {
             router.push('/auth/login');
             return;
         }
 
         const fetchMySpaces = async () => {
             try {
-                const res = await fetch('/api/spaces/mine', {
-                    headers: {
-                        'Authorization': `Bearer ${session.access_token}`,
-                    },
-                });
+                // Fetch spaces owned by the current user using client-side Supabase
+                const { data, error: fetchError } = await supabase
+                    .from('spaces')
+                    .select('id, slug, name, is_secret, created_at, expires_at, view_count')
+                    .eq('owner_id', user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(100);
 
-                if (res.status === 401) {
-                    router.push('/auth/login');
+                if (fetchError) {
+                    console.error('Fetch spaces error:', fetchError);
+                    setError('Failed to load spaces');
+                    setLoading(false);
                     return;
                 }
 
-                const data = await res.json();
-                if (data.spaces) {
-                    setSpaces(data.spaces);
-                } else {
-                    setError('Failed to load spaces');
-                }
+                // Get item counts
+                const spacesWithCounts = await Promise.all(
+                    (data || []).map(async (space) => {
+                        const { count } = await supabase
+                            .from('items')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('space_id', space.id);
+                        return { ...space, item_count: count || 0 };
+                    })
+                );
+
+                setSpaces(spacesWithCounts);
             } catch (err) {
                 console.error('Fetch spaces error:', err);
                 setError('Failed to load spaces');
@@ -76,7 +87,7 @@ export default function DashboardPage() {
         };
 
         fetchMySpaces();
-    }, [user, session, authLoading, router]);
+    }, [user, authLoading, router]);
 
     const handleSignOut = async () => {
         await signOut();

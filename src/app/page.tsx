@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 import { TEMPLATES, SpaceTemplate } from '@/lib/templates';
 
 export default function HomePage() {
@@ -42,6 +43,14 @@ export default function HomePage() {
 
       const data = await res.json();
       if (data.slug) {
+        // Link space to the logged-in user's account
+        if (user && data.space?.id) {
+          await supabase
+            .from('spaces')
+            .update({ owner_id: user.id })
+            .eq('id', data.space.id);
+        }
+
         // Create starter items from template
         if (selectedTemplate) {
           for (const item of selectedTemplate.starterItems) {

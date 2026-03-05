@@ -1,52 +1,18 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
 
 export async function middleware(request: NextRequest) {
     const response = NextResponse.next({
         request: { headers: request.headers },
     });
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-        return response;
-    }
-
-    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-        cookies: {
-            getAll() {
-                return request.cookies.getAll();
-            },
-            setAll(cookiesToSet) {
-                cookiesToSet.forEach(({ name, value, options }) => {
-                    request.cookies.set(name, value);
-                    response.cookies.set(name, value, options);
-                });
-            },
-        },
-    });
-
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // Protect /dashboard — redirect to login if not authenticated
-    if (request.nextUrl.pathname.startsWith('/dashboard') && !user) {
-        const loginUrl = new URL('/auth/login', request.url);
-        loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
-        return NextResponse.redirect(loginUrl);
-    }
-
-    // Redirect logged-in users from auth pages to dashboard
-    if (user && (
-        request.nextUrl.pathname.startsWith('/auth/login') ||
-        request.nextUrl.pathname.startsWith('/auth/signup')
-    )) {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
+    // Add security headers
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('X-XSS-Protection', '1; mode=block');
 
     return response;
 }
 
 export const config = {
-    matcher: ['/dashboard/:path*', '/auth/:path*'],
+    matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
