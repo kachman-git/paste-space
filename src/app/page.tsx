@@ -186,7 +186,7 @@ export default function HomePage() {
 
             <p className="text-lg sm:text-xl theme-muted leading-relaxed max-w-2xl mx-auto animate-fade-in-up animation-delay-400">
               Create a shared space and paste text, images, code, files, or links.
-              Everything syncs in real-time. No sign-up needed.
+              Everything syncs in real-time. Sign in to save and manage your spaces.
             </p>
           </div>
 
